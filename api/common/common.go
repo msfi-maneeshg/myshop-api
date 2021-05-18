@@ -32,9 +32,22 @@ func APIResponse(w http.ResponseWriter, status int, output interface{}) {
 //GetImage :
 func GetCDNImagePath(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	var filePath = vars["file-path"]
 	var fileName = vars["file-name"]
-	data, _ := ioutil.ReadFile("images/" + filePath + "/" + fileName)
+	var folder1 = vars["f1"]
+	var folder2 = vars["f2"]
+	var folder3 = vars["f3"]
+
+	var fullPath string
+	if folder1 != "" {
+		fullPath = folder1
+	}
+	if folder2 != "" {
+		fullPath = folder1 + "/" + folder2
+	}
+	if folder2 != "" {
+		fullPath = folder1 + "/" + folder2 + "/" + folder3
+	}
+	data, _ := ioutil.ReadFile(fullPath + "/" + fileName)
 	w.Write(data)
 	r.Body.Close()
 }

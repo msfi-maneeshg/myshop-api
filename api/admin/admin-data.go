@@ -38,6 +38,9 @@ func InsertNewProductImages(objNewProductDetails ProductDetails) (err error) {
 		sqlSubStr = sqlSubStr + fmt.Sprintf("('%v','%v'),", objNewProductDetails.ProductID, imageInfo.Name)
 	}
 
+	if sqlSubStr == "" {
+		return nil
+	}
 	sqlSubStr = sqlSubStr[:len(sqlSubStr)-1]
 	stmt, err := data.DemoDB.Prepare(sqlStr + sqlSubStr + ";")
 	defer stmt.Close()
@@ -53,10 +56,13 @@ func InsertNewProductImages(objNewProductDetails ProductDetails) (err error) {
 	return nil
 }
 
-func GetProductsDetail() (objProductsDetails []ProductDetails, err error) {
+func GetProductsDetail(productID string) (objProductsDetails []ProductDetails, err error) {
+	var whrStr string
+	if productID != "" {
+		whrStr = " WHERE pd.product_id = " + productID + " "
+	}
 	sqlStr := `SELECT pd.product_id,pd.product_name,pd.product_desc,pd.product_prize,pd.product_discount,pd.product_quantity, GROUP_CONCAT(pim.image_name) as product_images FROM product_detail pd 
-	LEFT JOIN product_images pim ON pd.product_id = pim.product_id 
-	GROUP BY pd.product_id`
+	LEFT JOIN product_images pim ON pd.product_id = pim.product_id ` + whrStr + ` GROUP BY pd.product_id`
 
 	allRows, err := data.DemoDB.Query(sqlStr)
 	if err != nil {
@@ -94,4 +100,21 @@ func GetProductsDetail() (objProductsDetails []ProductDetails, err error) {
 		objProductsDetails = append(objProductsDetails, objProductDetails)
 	}
 	return objProductsDetails, nil
+}
+
+func UpdateProductDetails(objUpdatedProductDetails ProductDetails) error {
+	sqlStr := fmt.Sprintf("UPDATE product_detail SET product_name = '%v', product_desc = '%v',product_prize = '%v',product_discount = '%v',product_quantity = '%v' where product_id = '%v'; ", objUpdatedProductDetails.ProductName, objUpdatedProductDetails.ProductDescription, objUpdatedProductDetails.ProductPrize, objUpdatedProductDetails.ProductDiscount, objUpdatedProductDetails.ProductQuantity, objUpdatedProductDetails.ProductID)
+
+	stmt, err := data.DemoDB.Prepare(sqlStr)
+	defer stmt.Close()
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.Exec()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
