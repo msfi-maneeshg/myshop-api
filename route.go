@@ -19,6 +19,9 @@ func addRouters(router *mux.Router) {
 	router.HandleFunc("/admin/product-detail/{productID}", admin.GetProductList).Methods("GET")
 	router.HandleFunc("/admin/product-detail/{productID}", admin.EditProduct).Methods("update")
 
+	router.HandleFunc("/admin/order-list/{limit}/{offset}", admin.GetOrderList).Methods("GET")
+	router.HandleFunc("/admin/order-list/{orderType}/{limit}/{offset}", admin.GetOrderList).Methods("GET")
+
 }
 
 func health(w http.ResponseWriter, r *http.Request) {

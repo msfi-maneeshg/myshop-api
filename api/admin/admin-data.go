@@ -56,6 +56,7 @@ func InsertNewProductImages(objNewProductDetails ProductDetails) (err error) {
 	return nil
 }
 
+//GetProductsDetail :
 func GetProductsDetail(productID string) (objProductsDetails []ProductDetails, err error) {
 	var whrStr string
 	if productID != "" {
@@ -102,6 +103,7 @@ func GetProductsDetail(productID string) (objProductsDetails []ProductDetails, e
 	return objProductsDetails, nil
 }
 
+//UpdateProductDetails :
 func UpdateProductDetails(objUpdatedProductDetails ProductDetails) error {
 	sqlStr := fmt.Sprintf("UPDATE product_detail SET product_name = '%v', product_desc = '%v',product_prize = '%v',product_discount = '%v',product_quantity = '%v' where product_id = '%v'; ", objUpdatedProductDetails.ProductName, objUpdatedProductDetails.ProductDescription, objUpdatedProductDetails.ProductPrize, objUpdatedProductDetails.ProductDiscount, objUpdatedProductDetails.ProductQuantity, objUpdatedProductDetails.ProductID)
 
@@ -117,4 +119,71 @@ func UpdateProductDetails(objUpdatedProductDetails ProductDetails) error {
 	}
 
 	return nil
+}
+
+//GetOrdersDetail :
+func GetOrdersDetail(orderType, searchOrderID string, limit, offset int) (objOrdersDetails []OrderDetails, err error) {
+	var whrStr string
+	if orderType != "" {
+		whrStr = whrStr + " AND order_status = '" + orderType + "' "
+	}
+	if searchOrderID != "" {
+		whrStr = whrStr + " AND order_id LIKE '%" + searchOrderID + "%' "
+	}
+	if whrStr != "" {
+		whrStr = strings.Replace(whrStr, "AND", "WHERE", 1)
+	}
+	sqlStr := "SELECT order_id, shipping_address, phone, total_payment, order_date, order_status " +
+		" FROM orders " + whrStr + " LIMIT ?,?"
+
+	allRows, err := data.DemoDB.Query(sqlStr, offset, limit)
+	if err != nil {
+		return objOrdersDetails, err
+	}
+	for allRows.Next() {
+		var objOrderDetails OrderDetails
+		var orderID, phoneNumber sql.NullInt64
+		var totalPayment sql.NullFloat64
+		var orderDate, orderStatus, shippingAddress sql.NullString
+		allRows.Scan(
+			&orderID,
+			&shippingAddress,
+			&phoneNumber,
+			&totalPayment,
+			&orderDate,
+			&orderStatus,
+		)
+		objOrderDetails.OrderID = orderID.Int64
+		objOrderDetails.ShippingAddress = shippingAddress.String
+		objOrderDetails.Phone = phoneNumber.Int64
+		objOrderDetails.TotalPayment = totalPayment.Float64
+		objOrderDetails.OrderDate = orderDate.String
+		objOrderDetails.OrderStatus = orderStatus.String
+
+		objOrdersDetails = append(objOrdersDetails, objOrderDetails)
+	}
+	return objOrdersDetails, nil
+}
+
+func GetTotalOrdersCount(orderType, searchOrderID string) (totalRecords int64, err error) {
+
+	var totolCount sql.NullInt64
+	var whrStr string
+	if orderType != "" {
+		whrStr = whrStr + " AND order_status = '" + orderType + "' "
+	}
+	if searchOrderID != "" {
+		whrStr = whrStr + " AND order_id LIKE '%" + searchOrderID + "%' "
+	}
+	if whrStr != "" {
+		whrStr = strings.Replace(whrStr, "AND", "WHERE", 1)
+	}
+
+	sqlStr := "SELECT COUNT(order_id) as total_records FROM orders"
+	err = data.DemoDB.QueryRow(sqlStr + whrStr).Scan(&totolCount)
+	if err != nil && err != sql.ErrNoRows {
+		return totalRecords, err
+	}
+	totalRecords = totolCount.Int64
+	return totalRecords, nil
 }

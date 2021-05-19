@@ -18,8 +18,6 @@ func AddProduct(w http.ResponseWriter, r *http.Request) {
 	var objNewProductDetails ProductDetails
 	var err error
 
-	common.APIResponse(w, http.StatusOK, "Product has been added.")
-	return
 	//------check body request
 	if r.Body == nil {
 		common.APIResponse(w, http.StatusBadRequest, "Request body can not be blank")
@@ -187,4 +185,39 @@ func EditProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	common.APIResponse(w, http.StatusOK, "Product details has been updated successfully.")
+}
+
+//GetOrderList:
+func GetOrderList(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	var orderType = vars["orderType"]
+	if orderType == "all" {
+		orderType = ""
+	}
+	if orderType != "" && orderType != "completed" && orderType != "shipped" && orderType != "pending" {
+		common.APIResponse(w, http.StatusBadRequest, "Invalid type of order.")
+		return
+	}
+	limit, _ := strconv.Atoi(vars["limit"])
+	offset, _ := strconv.Atoi(vars["offset"])
+	searchOrderID := r.URL.Query().Get("search")
+
+	//----------get count of total records
+	totalRecords, err := GetTotalOrdersCount(orderType, searchOrderID)
+	if err != nil {
+		common.APIResponse(w, http.StatusInternalServerError, "Getting error while getting order record count. Error:"+err.Error())
+		return
+	}
+
+	//-----------get full records
+	ordersList, err := GetOrdersDetail(orderType, searchOrderID, limit, offset)
+	if err != nil {
+		common.APIResponse(w, http.StatusInternalServerError, "Getting error while getting order list. Error:"+err.Error())
+		return
+	}
+
+	var finalOutput OrdersDetailList
+	finalOutput.TotalOrders = totalRecords
+	finalOutput.Orders = ordersList
+	common.APIResponse(w, http.StatusOK, finalOutput)
 }
