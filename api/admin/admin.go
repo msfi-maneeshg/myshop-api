@@ -194,10 +194,7 @@ func GetOrderList(w http.ResponseWriter, r *http.Request) {
 	if orderType == "all" {
 		orderType = ""
 	}
-	if orderType != "" && orderType != "completed" && orderType != "shipped" && orderType != "pending" {
-		common.APIResponse(w, http.StatusBadRequest, "Invalid type of order.")
-		return
-	}
+
 	limit, _ := strconv.Atoi(vars["limit"])
 	offset, _ := strconv.Atoi(vars["offset"])
 	searchOrderID := r.URL.Query().Get("search")
@@ -220,4 +217,38 @@ func GetOrderList(w http.ResponseWriter, r *http.Request) {
 	finalOutput.TotalOrders = totalRecords
 	finalOutput.Orders = ordersList
 	common.APIResponse(w, http.StatusOK, finalOutput)
+}
+
+func GetOrderDetails(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	var orderID = vars["orderID"]
+
+	//-----------get full records
+	orderDetails, err := GetOrderFullDetail(orderID)
+	if err != nil {
+		common.APIResponse(w, http.StatusInternalServerError, "Getting error while getting order details. Error:"+err.Error())
+		return
+	}
+	if len(orderDetails.OrderProductDetails) == 0 {
+		common.APIResponse(w, http.StatusNotFound, "Order details not found.")
+		return
+	}
+	common.APIResponse(w, http.StatusOK, orderDetails)
+}
+
+//UpdateOrderStatus :
+func UpdateOrderStatus(w http.ResponseWriter, r *http.Request) {
+	orderID := r.FormValue("orderID")
+	orderStatus := r.FormValue("orderStatus")
+
+	if orderID == "" || orderStatus == "" {
+		common.APIResponse(w, http.StatusBadRequest, "orderID/orderStatus can not be empty.")
+		return
+	}
+	err := UpdateOrderStatusID(orderID, orderStatus)
+	if err != nil {
+		common.APIResponse(w, http.StatusInternalServerError, "Getting error while updating order status. Error:"+err.Error())
+		return
+	}
+	common.APIResponse(w, http.StatusOK, "Order status has been updated")
 }

@@ -17,10 +17,12 @@ func addRouters(router *mux.Router) {
 	router.HandleFunc("/admin/add-product", admin.AddProduct).Methods("POST")
 	router.HandleFunc("/admin/product-list", admin.GetProductList).Methods("GET")
 	router.HandleFunc("/admin/product-detail/{productID}", admin.GetProductList).Methods("GET")
-	router.HandleFunc("/admin/product-detail/{productID}", admin.EditProduct).Methods("update")
+	router.HandleFunc("/admin/product-detail/{productID}", admin.EditProduct).Methods("UPDATE")
 
+	router.HandleFunc("/admin/order-details/{orderID}", admin.GetOrderDetails).Methods("GET")
 	router.HandleFunc("/admin/order-list/{limit}/{offset}", admin.GetOrderList).Methods("GET")
 	router.HandleFunc("/admin/order-list/{orderType}/{limit}/{offset}", admin.GetOrderList).Methods("GET")
+	router.HandleFunc("/admin/order-status", admin.UpdateOrderStatus).Methods("UPDATE")
 
 }
 

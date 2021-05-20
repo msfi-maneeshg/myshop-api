@@ -125,7 +125,7 @@ func UpdateProductDetails(objUpdatedProductDetails ProductDetails) error {
 func GetOrdersDetail(orderType, searchOrderID string, limit, offset int) (objOrdersDetails []OrderDetails, err error) {
 	var whrStr string
 	if orderType != "" {
-		whrStr = whrStr + " AND order_status = '" + orderType + "' "
+		whrStr = whrStr + " AND os.order_status_id = '" + orderType + "' "
 	}
 	if searchOrderID != "" {
 		whrStr = whrStr + " AND order_id LIKE '%" + searchOrderID + "%' "
@@ -133,8 +133,10 @@ func GetOrdersDetail(orderType, searchOrderID string, limit, offset int) (objOrd
 	if whrStr != "" {
 		whrStr = strings.Replace(whrStr, "AND", "WHERE", 1)
 	}
-	sqlStr := "SELECT order_id, shipping_address, phone, total_payment, order_date, order_status " +
-		" FROM orders " + whrStr + " LIMIT ?,?"
+	sqlStr := "SELECT order_id, shipping_address, phone, total_payment, order_date, os.status_name " +
+		" FROM orders o " +
+		" LEFT JOIN order_status os ON o.order_status = os.order_status_id " +
+		whrStr + " LIMIT ?,?"
 
 	allRows, err := data.DemoDB.Query(sqlStr, offset, limit)
 	if err != nil {
@@ -186,4 +188,80 @@ func GetTotalOrdersCount(orderType, searchOrderID string) (totalRecords int64, e
 	}
 	totalRecords = totolCount.Int64
 	return totalRecords, nil
+}
+
+//GetOrderFullDetail :
+func GetOrderFullDetail(OrderID string) (objOrdersDetails OrderDetails, err error) {
+	var whrStr string
+	whrStr = " WHERE o.order_id = '" + OrderID + "' "
+
+	sqlStr := "SELECT o.shipping_address, o.phone, o.total_payment, o.total_quantity, o.order_date, os.status_name, os.order_status_id, " +
+		" p.product_name,od.quantity,od.prize,od.discount,u.email_id,u.user_name " +
+		" FROM orders o " +
+		" LEFT JOIN order_detail od ON od.order_id = o.order_id " +
+		" LEFT JOIN product_detail p ON od.product_id = p.product_id " +
+		" LEFT JOIN `user` u ON u.user_id = o.user_id " +
+		" LEFT JOIN order_status os ON o.order_status = os.order_status_id " + whrStr
+
+	allRows, err := data.DemoDB.Query(sqlStr)
+	if err != nil {
+		return objOrdersDetails, err
+	}
+	for allRows.Next() {
+		var objItemDetails OrderProductDetails
+		var phoneNumber, totalQuantity, quantity, statusID sql.NullInt64
+		var totalPayment, prize, discount sql.NullFloat64
+		var orderDate, orderStatus, shippingAddress, productName, emailAddress, userName sql.NullString
+		allRows.Scan(
+			&shippingAddress,
+			&phoneNumber,
+			&totalPayment,
+			&totalQuantity,
+			&orderDate,
+			&orderStatus,
+			&statusID,
+			&productName,
+			&quantity,
+			&prize,
+			&discount,
+			&emailAddress,
+			&userName,
+		)
+
+		objOrdersDetails.Username = userName.String
+		objOrdersDetails.EmailID = emailAddress.String
+		objOrdersDetails.ShippingAddress = shippingAddress.String
+		objOrdersDetails.Phone = phoneNumber.Int64
+		objOrdersDetails.TotalPayment = totalPayment.Float64
+		objOrdersDetails.TotalQuantity = totalQuantity.Int64
+		objOrdersDetails.OrderDate = orderDate.String
+		objOrdersDetails.OrderStatus = orderStatus.String
+		objOrdersDetails.OrderStatusID = statusID.Int64
+
+		objItemDetails.ProductName = productName.String
+		objItemDetails.Quantity = quantity.Int64
+		objItemDetails.Prize = prize.Float64
+		objItemDetails.Discount = discount.Float64
+
+		objOrdersDetails.OrderProductDetails = append(objOrdersDetails.OrderProductDetails, objItemDetails)
+	}
+	return objOrdersDetails, nil
+}
+
+//UpdateOrderStatusID :
+func UpdateOrderStatusID(orderID, statusID string) error {
+	sqlStr := fmt.Sprintf("UPDATE orders SET order_status = '%v' where order_id = '%v'; ", statusID, orderID)
+
+	stmt, err := data.DemoDB.Prepare(sqlStr)
+	defer stmt.Close()
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.Exec()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
