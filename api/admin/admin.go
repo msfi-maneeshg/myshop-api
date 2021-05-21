@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -85,8 +86,18 @@ func AddProduct(w http.ResponseWriter, r *http.Request) {
 func GetProductList(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	var productID = vars["productID"]
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
 
-	productList, err := GetProductsDetail(productID)
+	lowStockOrder := strings.ToLower(r.URL.Query().Get("lowStock"))
+	if lowStockOrder != "asc" && lowStockOrder != "desc" {
+		lowStockOrder = ""
+	}
+
+	newStock := strings.ToLower(r.URL.Query().Get("newStock"))
+	if newStock != "asc" && newStock != "desc" {
+		newStock = ""
+	}
+	productList, err := GetProductsDetail(productID, lowStockOrder, newStock, limit)
 	if err != nil {
 		common.APIResponse(w, http.StatusInternalServerError, "Getting error while getting product list. Error:"+err.Error())
 		return
@@ -135,7 +146,7 @@ func EditProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//----validate productID
-	productList, err := GetProductsDetail(productID)
+	productList, err := GetProductsDetail(productID, "", "", 0)
 	if err != nil {
 		common.APIResponse(w, http.StatusInternalServerError, "Getting error while getting product list. Error:"+err.Error())
 		return
@@ -251,4 +262,36 @@ func UpdateOrderStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	common.APIResponse(w, http.StatusOK, "Order status has been updated")
+}
+
+//CheckUserLogin :
+func CheckUserLogin(w http.ResponseWriter, r *http.Request) {
+	userID := r.FormValue("userID")
+	password := r.FormValue("password")
+
+	userName, err := CheckUserLoginDetails(userID, password)
+	if err != nil {
+		common.APIResponse(w, http.StatusInternalServerError, "Getting error while checking user login details. Error:"+err.Error())
+		return
+	}
+
+	if userName == "" {
+		common.APIResponse(w, http.StatusNotFound, "Invalid Credentials")
+		return
+	}
+
+	common.APIResponse(w, http.StatusOK, UserDetails{Username: userName, UserID: userID})
+}
+
+//ChangePassword :
+func ChangePassword(w http.ResponseWriter, r *http.Request) {
+	userID := r.FormValue("userID")
+	password := r.FormValue("password")
+
+	err := UpdateUserPassword(userID, password)
+	if err != nil {
+		common.APIResponse(w, http.StatusInternalServerError, "Getting error while updating user's new password. Error:"+err.Error())
+		return
+	}
+	common.APIResponse(w, http.StatusOK, "Password has been changed")
 }

@@ -57,13 +57,33 @@ func InsertNewProductImages(objNewProductDetails ProductDetails) (err error) {
 }
 
 //GetProductsDetail :
-func GetProductsDetail(productID string) (objProductsDetails []ProductDetails, err error) {
-	var whrStr string
+func GetProductsDetail(productID, lowStockOrder, newStock string, limit int) (objProductsDetails []ProductDetails, err error) {
+	var whrStr, orderbyStr, limitStr string
 	if productID != "" {
-		whrStr = " WHERE pd.product_id = " + productID + " "
+		whrStr = whrStr + " AND pd.product_id = " + productID + " "
+	}
+	if lowStockOrder != "" {
+		whrStr = whrStr + " AND pd.product_quantity <= 5 "
+		orderbyStr = " , pd.product_quantity ASC "
+	}
+
+	if newStock != "" {
+		orderbyStr = " , pd.dateadded DESC "
+	}
+
+	if limit > 0 {
+		limitStr = fmt.Sprintf(" LIMIT %v ", limit)
+	}
+
+	if whrStr != "" {
+		whrStr = strings.Replace(whrStr, "AND", "WHERE", 1)
+	}
+
+	if orderbyStr != "" {
+		orderbyStr = strings.Replace(orderbyStr, ",", "ORDER BY", 1)
 	}
 	sqlStr := `SELECT pd.product_id,pd.product_name,pd.product_desc,pd.product_prize,pd.product_discount,pd.product_quantity, GROUP_CONCAT(pim.image_name) as product_images FROM product_detail pd 
-	LEFT JOIN product_images pim ON pd.product_id = pim.product_id ` + whrStr + ` GROUP BY pd.product_id`
+	LEFT JOIN product_images pim ON pd.product_id = pim.product_id ` + whrStr + ` GROUP BY pd.product_id ` + orderbyStr + limitStr
 
 	allRows, err := data.DemoDB.Query(sqlStr)
 	if err != nil {
@@ -251,6 +271,33 @@ func GetOrderFullDetail(OrderID string) (objOrdersDetails OrderDetails, err erro
 //UpdateOrderStatusID :
 func UpdateOrderStatusID(orderID, statusID string) error {
 	sqlStr := fmt.Sprintf("UPDATE orders SET order_status = '%v' where order_id = '%v'; ", statusID, orderID)
+
+	stmt, err := data.DemoDB.Prepare(sqlStr)
+	defer stmt.Close()
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.Exec()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func CheckUserLoginDetails(userID, password string) (string, error) {
+	var userName sql.NullString
+	sqlStr := "SELECT user_name FROM `user` WHERE email_id = ? AND password = ? and is_admin = ?"
+	err := data.DemoDB.QueryRow(sqlStr, userID, password, 1).Scan(&userName)
+	if err != nil && err != sql.ErrNoRows {
+		return userName.String, err
+	}
+	return userName.String, nil
+}
+
+func UpdateUserPassword(userID, password string) error {
+	sqlStr := fmt.Sprintf("UPDATE `user` SET password = '%v' where email_id = '%v'; ", password, userID)
 
 	stmt, err := data.DemoDB.Prepare(sqlStr)
 	defer stmt.Close()

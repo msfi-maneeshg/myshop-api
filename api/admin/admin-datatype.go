@@ -24,8 +24,8 @@ type OrderDetails struct {
 	EmailID             string                `json:"emailID,omitempty"`
 	ShippingAddress     string                `json:"shippingAddress,omitempty"`
 	Phone               int64                 `json:"phone,omitempty"`
-	TotalPayment        float64               `json:"totalPayment,omitempty"`
-	TotalQuantity       int64                 `json:"totalQuantity,omitempty"`
+	TotalPayment        float64               `json:"totalPayment"`
+	TotalQuantity       int64                 `json:"totalQuantity"`
 	OrderDate           string                `json:"orderDate,omitempty"`
 	OrderStatus         string                `json:"orderStatus,omitempty"`
 	OrderStatusID       int64                 `json:"orderStatusID,omitempty"`
@@ -44,4 +44,10 @@ type OrderProductDetails struct {
 type OrdersDetailList struct {
 	TotalOrders int64          `json:"totalOrders"`
 	Orders      []OrderDetails `json:"orders,omitempty"`
+}
+
+//UserDetails :
+type UserDetails struct {
+	Username string `json:"username"`
+	UserID   string `json:"userID"`
 }
