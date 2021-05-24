@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"myshop-api/api/admin"
 	"myshop-api/api/common"
+	"myshop-api/api/front"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -26,6 +27,9 @@ func addRouters(router *mux.Router) {
 
 	router.HandleFunc("/admin/check-login", admin.CheckUserLogin).Methods("POST")
 	router.HandleFunc("/admin/change-password", admin.ChangePassword).Methods("UPDATE")
+
+	//----------Front APIs
+	router.HandleFunc("/check-login", front.CheckUserLogin).Methods("POST")
 
 }
 
