@@ -3,6 +3,10 @@ package front
 import (
 	"myshop-api/api/common"
 	"net/http"
+	"strconv"
+	"strings"
+
+	"github.com/gorilla/mux"
 )
 
 //CheckUserLogin :
@@ -22,4 +26,37 @@ func CheckUserLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	common.APIResponse(w, http.StatusOK, UserDetails{Username: userName, UserID: userID})
+}
+
+//GetProductList:
+func GetProductList(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	var productID = vars["productID"]
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+
+	lowStockOrder := strings.ToLower(r.URL.Query().Get("lowStock"))
+	if lowStockOrder != "asc" && lowStockOrder != "desc" {
+		lowStockOrder = ""
+	}
+
+	newStock := strings.ToLower(r.URL.Query().Get("newStock"))
+	if newStock != "asc" && newStock != "desc" {
+		newStock = ""
+	}
+	productList, err := GetProductsDetail(productID, lowStockOrder, newStock, limit)
+	if err != nil {
+		common.APIResponse(w, http.StatusInternalServerError, "Getting error while getting product list. Error:"+err.Error())
+		return
+	}
+
+	if productID != "" {
+		if len(productList) == 0 {
+			common.APIResponse(w, http.StatusNotFound, "No product found!")
+			return
+		}
+		common.APIResponse(w, http.StatusOK, productList[0])
+		return
+	}
+
+	common.APIResponse(w, http.StatusOK, productList)
 }
