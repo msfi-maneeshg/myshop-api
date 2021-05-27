@@ -30,9 +30,11 @@ func addRouters(router *mux.Router) {
 
 	//----------Front APIs
 	router.HandleFunc("/check-login", front.CheckUserLogin).Methods("POST")
+	router.HandleFunc("/check-email", front.CheckUserEmail).Methods("POST")
 	router.HandleFunc("/product-list", front.GetProductList).Methods("GET")
 	router.HandleFunc("/product-list/{productIDs}", front.GetProductList).Methods("GET")
 	router.HandleFunc("/product-detail/{productID}", front.GetProductList).Methods("GET")
+	router.HandleFunc("/place-order/{userID}", front.PlaceOrder).Methods("POST")
 
 }
 

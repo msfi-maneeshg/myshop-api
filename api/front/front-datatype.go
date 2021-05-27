@@ -22,3 +22,18 @@ type ProductImageDetails struct {
 	Name         string `json:"imageName,omitempty"`
 	Base64String string `json:"base64String,omitempty"`
 }
+
+//UserOrderInput :
+type UserOrderInput struct {
+	Name          string          `json:"name"`
+	Email         string          `json:"email"`
+	MobileNumber  int64           `json:"mobileNumber"`
+	Address       string          `json:"address"`
+	UserOrderInfo []UserOrderInfo `json:"userOrderInfo"`
+}
+
+//UserOrderInfo :
+type UserOrderInfo struct {
+	ProductID       int64 `json:"productID"`
+	ProductQuantity int64 `json:"productQuantity"`
+}
