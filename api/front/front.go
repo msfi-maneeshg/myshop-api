@@ -32,6 +32,8 @@ func CheckUserLogin(w http.ResponseWriter, r *http.Request) {
 func GetProductList(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	var productID = vars["productID"]
+	var productIDs = vars["productIDs"]
+
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
 
 	lowStockOrder := strings.ToLower(r.URL.Query().Get("lowStock"))
@@ -43,7 +45,16 @@ func GetProductList(w http.ResponseWriter, r *http.Request) {
 	if newStock != "asc" && newStock != "desc" {
 		newStock = ""
 	}
-	productList, err := GetProductsDetail(productID, lowStockOrder, newStock, limit)
+
+	if strings.Contains(r.URL.RequestURI(), "product-detail") {
+		productIDs = ""
+	} else if strings.Contains(r.URL.RequestURI(), "product-list") {
+		productID = ""
+	}
+
+	r.URL.RequestURI()
+
+	productList, err := GetProductsDetail(productID, productIDs, lowStockOrder, newStock, limit)
 	if err != nil {
 		common.APIResponse(w, http.StatusInternalServerError, "Getting error while getting product list. Error:"+err.Error())
 		return

@@ -19,11 +19,14 @@ func CheckUserLoginDetails(userID, password string) (string, error) {
 }
 
 //GetProductsDetail :
-func GetProductsDetail(productID, lowStockOrder, newStock string, limit int) (objProductsDetails []ProductDetails, err error) {
+func GetProductsDetail(productID, productIDs, lowStockOrder, newStock string, limit int) (objProductsDetails []ProductDetails, err error) {
 	var whrStr, orderbyStr, limitStr string
 	if productID != "" {
 		whrStr = whrStr + " AND pd.product_id = " + productID + " "
+	} else if productIDs != "" {
+		whrStr = whrStr + " AND pd.product_id IN (" + productIDs + ") "
 	}
+
 	if lowStockOrder != "" {
 		whrStr = whrStr + " AND pd.product_quantity <= 5 "
 		orderbyStr = " , pd.product_quantity ASC "
