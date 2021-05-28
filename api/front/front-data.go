@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"myshop-api/api/common"
 	"myshop-api/api/data"
+	"strconv"
 	"strings"
 )
 
@@ -25,7 +26,7 @@ func CheckUserLoginDetails(userEmail, password string) (objUserInfo UserDetails,
 }
 
 //GetProductsDetail :
-func GetProductsDetail(productID, productIDs, lowStockOrder, newStock string, limit int) (objProductsDetails []ProductDetails, err error) {
+func GetProductsDetail(productID, productIDs, lowStockOrder, newStock, discountFilter string, limit, minPrize, maxPrize int) (objProductsDetails []ProductDetails, err error) {
 	var whrStr, orderbyStr, limitStr string
 	if productID != "" {
 		whrStr = whrStr + " AND pd.product_id = " + productID + " "
@@ -38,12 +39,21 @@ func GetProductsDetail(productID, productIDs, lowStockOrder, newStock string, li
 		orderbyStr = " , pd.product_quantity ASC "
 	}
 
-	if newStock != "" {
-		orderbyStr = " , pd.dateadded DESC "
+	if minPrize > 0 && maxPrize > 0 && maxPrize > minPrize {
+		productFinalPrize := "(pd.product_prize * (100-pd.product_discount)/100)"
+		whrStr = whrStr + fmt.Sprintf(" AND "+productFinalPrize+" >= %v AND "+productFinalPrize+" <= %v ", minPrize, maxPrize)
 	}
 
-	if limit > 0 {
-		limitStr = fmt.Sprintf(" LIMIT %v ", limit)
+	discountParameters := strings.Split(discountFilter, ":")
+	if len(discountParameters) == 3 {
+		discount, _ := strconv.Atoi(discountParameters[1])
+		if discountParameters[2] == "more" && discount > 0 {
+			whrStr = whrStr + fmt.Sprintf(" AND pd.product_discount >= %v ", discount)
+		}
+	}
+
+	if newStock != "" {
+		orderbyStr = " , pd.dateadded DESC "
 	}
 
 	if whrStr != "" {
@@ -53,6 +63,11 @@ func GetProductsDetail(productID, productIDs, lowStockOrder, newStock string, li
 	if orderbyStr != "" {
 		orderbyStr = strings.Replace(orderbyStr, ",", "ORDER BY", 1)
 	}
+
+	if limit > 0 {
+		limitStr = fmt.Sprintf(" LIMIT %v ", limit)
+	}
+
 	sqlStr := `SELECT pd.product_id,pd.product_name,pd.product_desc,pd.product_prize,pd.product_discount,pd.product_quantity, GROUP_CONCAT(pim.image_name) as product_images FROM product_detail pd 
 	LEFT JOIN product_images pim ON pd.product_id = pim.product_id ` + whrStr + ` GROUP BY pd.product_id ` + orderbyStr + limitStr
 
@@ -146,6 +161,26 @@ func UpdateProductStock(productInfo ProductDetails) (err error) {
 
 	sqlStr := fmt.Sprintf("UPDATE product_detail p SET p.product_quantity = p.product_quantity - %v WHERE p.product_id = %v;", productInfo.ProductQuantity, productInfo.ProductID)
 
+	if sqlStr == "" {
+		return nil
+	}
+
+	stmt, err := data.DemoDB.Prepare(sqlStr)
+	defer stmt.Close()
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.Exec()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func RegisterNewUser(userName, userEmail, password string) error {
+	sqlStr := fmt.Sprintf("INSERT INTO user (email_id, password, user_name) VALUES ('%v','%v','%v');", userEmail, password, userName)
 	if sqlStr == "" {
 		return nil
 	}

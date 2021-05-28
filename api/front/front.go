@@ -34,6 +34,52 @@ func CheckUserLogin(w http.ResponseWriter, r *http.Request) {
 	common.APIResponse(w, http.StatusOK, UserDetails{Username: objUserInfo.Username, UserID: userID})
 }
 
+//Register :
+func Register(w http.ResponseWriter, r *http.Request) {
+	userName := r.FormValue("userName")
+	userEmail := r.FormValue("userEmail")
+	password := r.FormValue("password")
+	confirmPassword := r.FormValue("confirmPassword")
+
+	if password != "" && confirmPassword != "" && confirmPassword != password {
+		common.APIResponse(w, http.StatusBadRequest, "Password not matching")
+		return
+	}
+	if password == "" || confirmPassword == "" {
+		common.APIResponse(w, http.StatusBadRequest, "Please enter valid password")
+		return
+	}
+
+	if userName == "" {
+		common.APIResponse(w, http.StatusBadRequest, "Please enter valid Name")
+		return
+	}
+
+	if userEmail == "" {
+		common.APIResponse(w, http.StatusBadRequest, "Please enter valid Email ID")
+		return
+	}
+
+	objUserInfo, err := CheckUserLoginDetails(userEmail, "")
+	if err != nil {
+		common.APIResponse(w, http.StatusInternalServerError, "Getting error while checking user login details. Error:"+err.Error())
+		return
+	}
+
+	if objUserInfo.Username != "" {
+		common.APIResponse(w, http.StatusBadRequest, "EmailID already used.")
+		return
+	}
+
+	err = RegisterNewUser(userName, userEmail, password)
+	if err != nil {
+		common.APIResponse(w, http.StatusInternalServerError, "Getting error while inserting new user. Error:"+err.Error())
+		return
+	}
+
+	common.APIResponse(w, http.StatusOK, "User regiatration done!")
+}
+
 //CheckUserEmail :
 func CheckUserEmail(w http.ResponseWriter, r *http.Request) {
 	userID := r.FormValue("userID")
@@ -62,6 +108,8 @@ func GetProductList(w http.ResponseWriter, r *http.Request) {
 	var productIDs = vars["productIDs"]
 
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	minPrize, _ := strconv.Atoi(r.URL.Query().Get("minPrize"))
+	maxPrize, _ := strconv.Atoi(r.URL.Query().Get("maxPrize"))
 
 	lowStockOrder := strings.ToLower(r.URL.Query().Get("lowStock"))
 	if lowStockOrder != "asc" && lowStockOrder != "desc" {
@@ -73,6 +121,8 @@ func GetProductList(w http.ResponseWriter, r *http.Request) {
 		newStock = ""
 	}
 
+	discountFilter := strings.ToLower(r.URL.Query().Get("discount"))
+
 	if strings.Contains(r.URL.RequestURI(), "product-detail") {
 		productIDs = ""
 	} else if strings.Contains(r.URL.RequestURI(), "product-list") {
@@ -81,7 +131,7 @@ func GetProductList(w http.ResponseWriter, r *http.Request) {
 
 	r.URL.RequestURI()
 
-	productList, err := GetProductsDetail(productID, productIDs, lowStockOrder, newStock, limit)
+	productList, err := GetProductsDetail(productID, productIDs, lowStockOrder, newStock, discountFilter, limit, minPrize, maxPrize)
 	if err != nil {
 		common.APIResponse(w, http.StatusInternalServerError, "Getting error while getting product list. Error:"+err.Error())
 		return
@@ -148,7 +198,7 @@ func PlaceOrder(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	productsDetails, err := GetProductsDetail("", strings.Join(productIDs, ","), "", "", 0)
+	productsDetails, err := GetProductsDetail("", strings.Join(productIDs, ","), "", "", "", 0, 0, 0)
 	if err != nil {
 		common.APIResponse(w, http.StatusInternalServerError, "Getting error while getting product list. Error:"+err.Error())
 		return
