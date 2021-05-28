@@ -200,13 +200,16 @@ func RegisterNewUser(userName, userEmail, password string) error {
 }
 
 //GetOrdersDetail :
-func GetOrdersDetail(orderType, searchOrderID string, limit, offset int) (objOrdersDetails []OrderDetails, err error) {
+func GetOrdersDetail(userID, orderType, searchOrderID string, limit, offset int) (objOrdersDetails []OrderDetails, err error) {
 	var whrStr string
 	if orderType != "" {
 		whrStr = whrStr + " AND os.order_status_id = '" + orderType + "' "
 	}
 	if searchOrderID != "" {
 		whrStr = whrStr + " AND order_id LIKE '%" + searchOrderID + "%' "
+	}
+	if userID != "" {
+		whrStr = whrStr + " AND user_id = '" + userID + "' "
 	}
 	if whrStr != "" {
 		whrStr = strings.Replace(whrStr, "AND", "WHERE", 1)
@@ -245,7 +248,7 @@ func GetOrdersDetail(orderType, searchOrderID string, limit, offset int) (objOrd
 	return objOrdersDetails, nil
 }
 
-func GetTotalOrdersCount(orderType, searchOrderID string) (totalRecords int64, err error) {
+func GetTotalOrdersCount(userID, orderType, searchOrderID string) (totalRecords int64, err error) {
 
 	var totolCount sql.NullInt64
 	var whrStr string
@@ -254,6 +257,9 @@ func GetTotalOrdersCount(orderType, searchOrderID string) (totalRecords int64, e
 	}
 	if searchOrderID != "" {
 		whrStr = whrStr + " AND order_id LIKE '%" + searchOrderID + "%' "
+	}
+	if userID != "" {
+		whrStr = whrStr + " AND user_id = '" + userID + "' "
 	}
 	if whrStr != "" {
 		whrStr = strings.Replace(whrStr, "AND", "WHERE", 1)

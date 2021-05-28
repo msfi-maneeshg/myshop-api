@@ -256,17 +256,29 @@ func GetOrderList(w http.ResponseWriter, r *http.Request) {
 
 	limit, _ := strconv.Atoi(vars["limit"])
 	offset, _ := strconv.Atoi(vars["offset"])
+	userID := vars["userID"]
 	searchOrderID := r.URL.Query().Get("search")
 
+	objUserInfo, err := CheckUserLoginDetails(userID, "")
+	if err != nil {
+		common.APIResponse(w, http.StatusInternalServerError, "Getting error while checking user email. Error:"+err.Error())
+		return
+	}
+
+	if objUserInfo.Username == "" {
+		common.APIResponse(w, http.StatusBadRequest, "Invalid data")
+		return
+	}
+
 	//----------get count of total records
-	totalRecords, err := GetTotalOrdersCount(orderType, searchOrderID)
+	totalRecords, err := GetTotalOrdersCount(objUserInfo.UserID, orderType, searchOrderID)
 	if err != nil {
 		common.APIResponse(w, http.StatusInternalServerError, "Getting error while getting order record count. Error:"+err.Error())
 		return
 	}
 
 	//-----------get full records
-	ordersList, err := GetOrdersDetail(orderType, searchOrderID, limit, offset)
+	ordersList, err := GetOrdersDetail(objUserInfo.UserID, orderType, searchOrderID, limit, offset)
 	if err != nil {
 		common.APIResponse(w, http.StatusInternalServerError, "Getting error while getting order list. Error:"+err.Error())
 		return
