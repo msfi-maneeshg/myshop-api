@@ -36,6 +36,9 @@ func addRouters(router *mux.Router) {
 	router.HandleFunc("/product-list/{productIDs}", front.GetProductList).Methods("GET")
 	router.HandleFunc("/product-detail/{productID}", front.GetProductList).Methods("GET")
 	router.HandleFunc("/place-order/{userID}", front.PlaceOrder).Methods("POST")
+	router.HandleFunc("/order-list/{limit}/{offset}", front.GetOrderList).Methods("GET")
+	router.HandleFunc("/order-list/{orderType}/{limit}/{offset}", front.GetOrderList).Methods("GET")
+	router.HandleFunc("/order-details/{orderID}", front.GetOrderDetails).Methods("GET")
 
 }
 

@@ -245,3 +245,51 @@ func PlaceOrder(w http.ResponseWriter, r *http.Request) {
 	}
 	common.APIResponse(w, http.StatusOK, "Order has been placed.")
 }
+
+//GetOrderList:
+func GetOrderList(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	var orderType = vars["orderType"]
+	if orderType == "all" {
+		orderType = ""
+	}
+
+	limit, _ := strconv.Atoi(vars["limit"])
+	offset, _ := strconv.Atoi(vars["offset"])
+	searchOrderID := r.URL.Query().Get("search")
+
+	//----------get count of total records
+	totalRecords, err := GetTotalOrdersCount(orderType, searchOrderID)
+	if err != nil {
+		common.APIResponse(w, http.StatusInternalServerError, "Getting error while getting order record count. Error:"+err.Error())
+		return
+	}
+
+	//-----------get full records
+	ordersList, err := GetOrdersDetail(orderType, searchOrderID, limit, offset)
+	if err != nil {
+		common.APIResponse(w, http.StatusInternalServerError, "Getting error while getting order list. Error:"+err.Error())
+		return
+	}
+
+	var finalOutput OrdersDetailList
+	finalOutput.TotalOrders = totalRecords
+	finalOutput.Orders = ordersList
+	common.APIResponse(w, http.StatusOK, finalOutput)
+}
+func GetOrderDetails(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	var orderID = vars["orderID"]
+
+	//-----------get full records
+	orderDetails, err := GetOrderFullDetail(orderID)
+	if err != nil {
+		common.APIResponse(w, http.StatusInternalServerError, "Getting error while getting order details. Error:"+err.Error())
+		return
+	}
+	if len(orderDetails.OrderProductDetails) == 0 {
+		common.APIResponse(w, http.StatusNotFound, "Order details not found.")
+		return
+	}
+	common.APIResponse(w, http.StatusOK, orderDetails)
+}

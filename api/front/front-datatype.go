@@ -37,3 +37,33 @@ type UserOrderInfo struct {
 	ProductID       int64 `json:"productID"`
 	ProductQuantity int64 `json:"productQuantity"`
 }
+
+//OrderDetails :
+type OrderDetails struct {
+	OrderID             int64                 `json:"orderID,omitempty"`
+	Username            string                `json:"username,omitempty"`
+	EmailID             string                `json:"emailID,omitempty"`
+	ShippingAddress     string                `json:"shippingAddress,omitempty"`
+	Phone               int64                 `json:"phone,omitempty"`
+	TotalPayment        float64               `json:"totalPayment"`
+	TotalQuantity       int64                 `json:"totalQuantity"`
+	OrderDate           string                `json:"orderDate,omitempty"`
+	OrderStatus         string                `json:"orderStatus,omitempty"`
+	OrderStatusID       int64                 `json:"orderStatusID,omitempty"`
+	OrderProductDetails []OrderProductDetails `json:"productList,omitempty"`
+}
+
+//OrderProductDetails :
+type OrderProductDetails struct {
+	ProductName   string                `json:"productName,omitempty"`
+	Quantity      int64                 `json:"quantity,omitempty"`
+	Prize         float64               `json:"prize,omitempty"`
+	Discount      float64               `json:"discount,omitempty"`
+	ProductImages []ProductImageDetails `json:"productImage,omitempty"`
+}
+
+//OrdersDetailList :
+type OrdersDetailList struct {
+	TotalOrders int64          `json:"totalOrders"`
+	Orders      []OrderDetails `json:"orders,omitempty"`
+}
