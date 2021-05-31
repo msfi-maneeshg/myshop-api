@@ -51,3 +51,16 @@ type UserDetails struct {
 	Username string `json:"username"`
 	UserID   string `json:"userID"`
 }
+
+//CategoryDetails :
+type CategoryDetails struct {
+	CategoryID   int64  `json:"category_id"`
+	CategoryName string `json:"category_name"`
+	CategoryURL  string `json:"category_url"`
+}
+
+//CategoryDetailList :
+type CategoryDetailList struct {
+	TotalCategories int64             `json:"totalCategories"`
+	Categories      []CategoryDetails `json:"categories,omitempty"`
+}

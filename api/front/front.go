@@ -80,6 +80,60 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	common.APIResponse(w, http.StatusOK, "User regiatration done!")
 }
 
+//EditProfile :
+func EditProfile(w http.ResponseWriter, r *http.Request) {
+	userName := r.FormValue("userName")
+	userEmail := r.FormValue("userEmail")
+	password := r.FormValue("password")
+	confirmPassword := r.FormValue("confirmPassword")
+
+	if userEmail == "" {
+		common.APIResponse(w, http.StatusBadRequest, "Please enter valid Email ID")
+		return
+	}
+
+	if strings.Contains(r.URL.RequestURI(), "edit-profile") {
+		if userName == "" {
+			common.APIResponse(w, http.StatusBadRequest, "Please enter valid Name")
+			return
+		}
+	} else if strings.Contains(r.URL.RequestURI(), "change-password") {
+		if password != "" && confirmPassword != "" && confirmPassword != password {
+			common.APIResponse(w, http.StatusBadRequest, "Password not matching")
+			return
+		}
+		if password == "" || confirmPassword == "" {
+			common.APIResponse(w, http.StatusBadRequest, "Please enter valid password")
+			return
+		}
+	}
+
+	objUserInfo, err := CheckUserLoginDetails(userEmail, "")
+	if err != nil {
+		common.APIResponse(w, http.StatusInternalServerError, "Getting error while checking user login details. Error:"+err.Error())
+		return
+	}
+
+	if objUserInfo.Username == "" {
+		common.APIResponse(w, http.StatusBadRequest, "Invalid user action.")
+		return
+	}
+	var successMessage string
+	if strings.Contains(r.URL.RequestURI(), "edit-profile") {
+		err = UpdateUserInfo(objUserInfo.UserID, userName)
+		successMessage = "Profile info has been updated!"
+	} else if strings.Contains(r.URL.RequestURI(), "change-password") {
+		err = UpdateUserPassword(objUserInfo.UserID, password)
+		successMessage = "Password has been changed!"
+	}
+	if err != nil {
+		common.APIResponse(w, http.StatusInternalServerError, "Getting error while updating user info. Error:"+err.Error())
+		return
+	}
+
+	common.APIResponse(w, http.StatusOK, successMessage)
+}
+
 //CheckUserEmail :
 func CheckUserEmail(w http.ResponseWriter, r *http.Request) {
 	userID := r.FormValue("userID")
@@ -101,7 +155,7 @@ func CheckUserEmail(w http.ResponseWriter, r *http.Request) {
 	common.APIResponse(w, http.StatusOK, UserDetails{Username: objUserInfo.Username, UserID: userID})
 }
 
-//GetProductList:
+//GetProductList :
 func GetProductList(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	var productID = vars["productID"]
@@ -128,8 +182,6 @@ func GetProductList(w http.ResponseWriter, r *http.Request) {
 	} else if strings.Contains(r.URL.RequestURI(), "product-list") {
 		productID = ""
 	}
-
-	r.URL.RequestURI()
 
 	productList, err := GetProductsDetail(productID, productIDs, lowStockOrder, newStock, discountFilter, limit, minPrize, maxPrize)
 	if err != nil {
@@ -246,7 +298,7 @@ func PlaceOrder(w http.ResponseWriter, r *http.Request) {
 	common.APIResponse(w, http.StatusOK, "Order has been placed.")
 }
 
-//GetOrderList:
+//GetOrderList :
 func GetOrderList(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	var orderType = vars["orderType"]
@@ -289,6 +341,8 @@ func GetOrderList(w http.ResponseWriter, r *http.Request) {
 	finalOutput.Orders = ordersList
 	common.APIResponse(w, http.StatusOK, finalOutput)
 }
+
+//GetOrderDetails :
 func GetOrderDetails(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	var orderID = vars["orderID"]
@@ -304,4 +358,23 @@ func GetOrderDetails(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	common.APIResponse(w, http.StatusOK, orderDetails)
+}
+
+//GetProfileDetails :
+func GetProfileDetails(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	var userID = vars["userID"]
+
+	objUserInfo, err := CheckUserLoginDetails(userID, "")
+	if err != nil {
+		common.APIResponse(w, http.StatusInternalServerError, "Getting error while checking user email. Error:"+err.Error())
+		return
+	}
+
+	if objUserInfo.Username == "" {
+		common.APIResponse(w, http.StatusNotFound, "Invalid Credentials")
+		return
+	}
+
+	common.APIResponse(w, http.StatusOK, objUserInfo)
 }

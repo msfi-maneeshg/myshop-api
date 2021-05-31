@@ -342,3 +342,37 @@ func GetOrderFullDetail(OrderID string) (objOrdersDetails OrderDetails, err erro
 	}
 	return objOrdersDetails, nil
 }
+
+func UpdateUserInfo(userID, userName string) error {
+	sqlStr := fmt.Sprintf("UPDATE `user` u SET u.user_name = '%v' WHERE u.user_id = '%v';", userName, userID)
+
+	stmt, err := data.DemoDB.Prepare(sqlStr)
+	defer stmt.Close()
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.Exec()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func UpdateUserPassword(userID, userPassword string) error {
+	sqlStr := fmt.Sprintf("UPDATE `user` u SET u.password = %v WHERE u.user_id = %v;", userPassword, userID)
+
+	stmt, err := data.DemoDB.Prepare(sqlStr)
+	defer stmt.Close()
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.Exec()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

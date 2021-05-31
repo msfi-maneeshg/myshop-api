@@ -312,3 +312,101 @@ func UpdateUserPassword(userID, password string) error {
 
 	return nil
 }
+
+//GetTotalCategoryCount :
+func GetTotalCategoryCount(searchValue string) (totalRecords int64, err error) {
+
+	var totolCount sql.NullInt64
+	var whrStr string
+	if searchValue != "" {
+		whrStr = whrStr + " AND (category_url LIKE '%" + searchValue + "%' OR category_name LIKE '%" + searchValue + "%') "
+	}
+
+	if whrStr != "" {
+		whrStr = strings.Replace(whrStr, "AND", "WHERE", 1)
+	}
+
+	sqlStr := "SELECT COUNT(category_id) as category FROM product_category"
+	err = data.DemoDB.QueryRow(sqlStr + whrStr).Scan(&totolCount)
+	if err != nil && err != sql.ErrNoRows {
+		return totalRecords, err
+	}
+	totalRecords = totolCount.Int64
+	return totalRecords, nil
+}
+
+//GetCategoryDetail :
+func GetCategoryDetail(categoryID, searchValue string, limit, offset int) (objCategoryDetails []CategoryDetails, err error) {
+	var whrStr string
+	if searchValue != "" {
+		whrStr = whrStr + " AND (category_url LIKE '%" + searchValue + "%' OR category_name LIKE '%" + searchValue + "%') "
+	}
+
+	if categoryID != "" {
+		whrStr = whrStr + " AND category_id = '" + categoryID + "'"
+	}
+	if whrStr != "" {
+		whrStr = strings.Replace(whrStr, "AND", "WHERE", 1)
+	}
+	sqlStr := "SELECT category_id, category_name, category_url " +
+		" FROM product_category o " +
+		whrStr + " LIMIT ?,?"
+
+	allRows, err := data.DemoDB.Query(sqlStr, offset, limit)
+	if err != nil {
+		return objCategoryDetails, err
+	}
+	for allRows.Next() {
+		var objSingleCategoryDetails CategoryDetails
+		var categoryID sql.NullInt64
+		var categoryName, categoryURL sql.NullString
+		allRows.Scan(
+			&categoryID,
+			&categoryName,
+			&categoryURL,
+		)
+		objSingleCategoryDetails.CategoryID = categoryID.Int64
+		objSingleCategoryDetails.CategoryName = categoryName.String
+		objSingleCategoryDetails.CategoryURL = categoryURL.String
+
+		objCategoryDetails = append(objCategoryDetails, objSingleCategoryDetails)
+	}
+	return objCategoryDetails, nil
+}
+
+//InsertNewCategory :
+func InsertNewCategory(categoryName, categoryURL string) error {
+	sqlStr := "INSERT INTO product_category (category_name, category_url) VALUES "
+	sqlStr = sqlStr + fmt.Sprintf("('%v','%v');", categoryName, categoryURL)
+
+	stmt, err := data.DemoDB.Prepare(sqlStr)
+	defer stmt.Close()
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.Exec()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+//UpdateCategoryInfo :
+func UpdateCategoryInfo(categoryID, categoryName, categoryURL string) error {
+	sqlStr := fmt.Sprintf("UPDATE `product_category` SET category_name = '%v',category_url = '%v' where category_id = '%v'; ", categoryName, categoryURL, categoryID)
+
+	stmt, err := data.DemoDB.Prepare(sqlStr)
+	defer stmt.Close()
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.Exec()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

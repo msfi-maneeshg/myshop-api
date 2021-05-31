@@ -25,6 +25,10 @@ func addRouters(router *mux.Router) {
 	router.HandleFunc("/admin/order-list/{orderType}/{limit}/{offset}", admin.GetOrderList).Methods("GET")
 	router.HandleFunc("/admin/order-status", admin.UpdateOrderStatus).Methods("UPDATE")
 
+	router.HandleFunc("/admin/category-list/{limit}/{offset}", admin.GetCategoryList).Methods("GET")
+	router.HandleFunc("/admin/add-category", admin.AddNewCategory).Methods("POST")
+	router.HandleFunc("/admin/edit-category/{categoryID}", admin.EditCategory).Methods("UPDATE")
+
 	router.HandleFunc("/admin/check-login", admin.CheckUserLogin).Methods("POST")
 	router.HandleFunc("/admin/change-password", admin.ChangePassword).Methods("UPDATE")
 
@@ -39,6 +43,9 @@ func addRouters(router *mux.Router) {
 	router.HandleFunc("/order-list/{userID}/{limit}/{offset}", front.GetOrderList).Methods("GET")
 	router.HandleFunc("/order-list/{userID}/{orderType}/{limit}/{offset}", front.GetOrderList).Methods("GET")
 	router.HandleFunc("/order-details/{orderID}", front.GetOrderDetails).Methods("GET")
+	router.HandleFunc("/my-profile/{userID}", front.GetProfileDetails).Methods("GET")
+	router.HandleFunc("/edit-profile", front.EditProfile).Methods("UPDATE")
+	router.HandleFunc("/change-password", front.EditProfile).Methods("UPDATE")
 
 }
 

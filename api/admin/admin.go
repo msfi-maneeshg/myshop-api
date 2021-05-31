@@ -295,3 +295,92 @@ func ChangePassword(w http.ResponseWriter, r *http.Request) {
 	}
 	common.APIResponse(w, http.StatusOK, "Password has been changed")
 }
+
+//GetCategoryList :
+func GetCategoryList(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	limit, _ := strconv.Atoi(vars["limit"])
+	offset, _ := strconv.Atoi(vars["offset"])
+	searchString := r.URL.Query().Get("search")
+
+	//----------get count of total records
+	totalRecords, err := GetTotalCategoryCount(searchString)
+	if err != nil {
+		common.APIResponse(w, http.StatusInternalServerError, "Getting error while getting Category record count. Error:"+err.Error())
+		return
+	}
+
+	//-----------get full records
+	categoryList, err := GetCategoryDetail("", searchString, limit, offset)
+	if err != nil {
+		common.APIResponse(w, http.StatusInternalServerError, "Getting error while getting Category list. Error:"+err.Error())
+		return
+	}
+
+	var finalOutput CategoryDetailList
+	finalOutput.TotalCategories = totalRecords
+	finalOutput.Categories = categoryList
+	common.APIResponse(w, http.StatusOK, finalOutput)
+}
+
+//AddNewCategory :
+func AddNewCategory(w http.ResponseWriter, r *http.Request) {
+	categoryName := r.FormValue("categoryName")
+	categoryURL := r.FormValue("categoryURL")
+
+	if categoryName == "" || categoryURL != "" {
+		common.APIResponse(w, http.StatusBadRequest, "categoryName/categoryURL can not be empty")
+		return
+	}
+
+	totalRecords, err := GetTotalCategoryCount(categoryURL)
+	if err != nil {
+		common.APIResponse(w, http.StatusInternalServerError, "Getting error while getting Category record count. Error:"+err.Error())
+		return
+	}
+	if totalRecords > 0 {
+		//--------for same name product url
+		categoryURL = categoryURL + "-" + strconv.Itoa(int(totalRecords))
+	}
+
+	err = InsertNewCategory(categoryName, categoryURL)
+	if err != nil {
+		common.APIResponse(w, http.StatusInternalServerError, "Getting error while inserting new category. Error:"+err.Error())
+		return
+	}
+
+	common.APIResponse(w, http.StatusOK, "Category added successfully!")
+}
+
+//EditCategory :
+func EditCategory(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	categoryID := vars["categoryID"]
+
+	categoryName := r.FormValue("categoryName")
+	categoryURL := r.FormValue("categoryURL")
+
+	if categoryName == "" || categoryURL != "" {
+		common.APIResponse(w, http.StatusBadRequest, "categoryName/categoryURL can not be empty")
+		return
+	}
+
+	categoryList, err := GetCategoryDetail(categoryID, "", 0, 1)
+	if err != nil {
+		common.APIResponse(w, http.StatusInternalServerError, "Getting error while getting Category list. Error:"+err.Error())
+		return
+	}
+	if len(categoryList) == 0 {
+		common.APIResponse(w, http.StatusNotFound, "CategoryID not found.")
+		return
+	}
+
+	err = UpdateCategoryInfo(categoryID, categoryName, categoryURL)
+	if err != nil {
+		common.APIResponse(w, http.StatusInternalServerError, "Getting error while inserting new category. Error:"+err.Error())
+		return
+	}
+
+	common.APIResponse(w, http.StatusOK, "Category detail updated successfully!")
+}
